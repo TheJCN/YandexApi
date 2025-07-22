@@ -46,7 +46,7 @@ dependencies {
 <dependency>
     <groupId>com.github.TheJCN</groupId>
     <artifactId>YandexApi</artifactId>
-    <version>1.0.0</version>
+    <version>4a55c77891</version>
 </dependency>
 ```
 
