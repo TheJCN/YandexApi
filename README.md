@@ -21,7 +21,10 @@ TrackInfo info = client.getTrackInfoAsync(trackId).join();
 System.out.println(info.getTitle() + " - " + info.getArtist());
 ```
 
-#📦 Подключение через JitPack
+## 🔑 Получение токена для API
+- Для получения токена ознакомтесь с этой статьей: [Получение токена](https://yandex-music.readthedocs.io/en/main/token.html)
+
+# 📦 Подключение через JitPack
 ```gradle
 repositories {
     maven { url 'https://jitpack.io' }
