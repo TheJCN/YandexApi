@@ -1,4 +1,5 @@
 import top.jgroup.YandexMusicClient;
+import top.jgroup.model.TrackInfo;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -12,30 +13,39 @@ public class Main {
         try (InputStream input = new FileInputStream("config.properties")) {
             props.load(input);
         }
-        String token = props.getProperty("YANDEX_MUSIC_TOKEN");
+        String oathToken = props.getProperty("YANDEX_MUSIC_TOKEN_OAUTH");
+        String extensionToken = props.getProperty("YANDEX_MUSIC_TOKEN_EXTENSION");
 
-        YandexMusicClient client = new YandexMusicClient();
-        client.setToken(token);
-        client.getCurrentTrackIdAsync().thenAccept(trackId -> {
-            System.out.println("Current Track ID: " + trackId);
-            client.getTrackInfoAsync(trackId).thenAccept(trackInfo -> {
-                System.out.println("Track Title: " + trackInfo.title());
-                System.out.println("Artist: " + trackInfo.artist());
-                System.out.println("Duration (ms): " + trackInfo.durationMs());
-                System.out.println("Cover URL: " + trackInfo.coverUrl());
-            }).exceptionally(ex -> {
-                System.err.println("Error fetching track info: " + ex.getMessage());
-                return null;
-            });
-            client.getTrackRawInfoAsync(trackId).thenAccept(trackNode -> {
-                System.out.println("Raw Track Info: " + trackNode.toPrettyString());
-            }).exceptionally(ex -> {
-                System.err.println("Error fetching raw track info: " + ex.getMessage());
-                return null;
-            });
-        }).exceptionally(ex -> {
-            System.err.println("Error fetching current track ID: " + ex.getMessage());
-            return null;
-        });
+        YandexMusicClient oauthClient = new YandexMusicClient(oathToken, true);
+
+
+        try {
+            TrackInfo oauthTrack = getTrackFromOAuthToken(oauthClient);
+            System.out.println("Трек из OAuth токена: " + oauthTrack);
+        } catch (Exception e) {
+            System.out.println("Ошибка получения трека с OAuth токена: " + e.getMessage());
+        }
+
+        YandexMusicClient extensionClient = new YandexMusicClient();
+        extensionClient.setToken(extensionToken);
+
+        try {
+            TrackInfo extensionTrack = getTrackFromExtensionToken(extensionClient);
+            System.out.println("Трек из Extension токена: " + extensionTrack);
+        } catch (Exception e) {
+            System.out.println("Ошибка получения трека с Extension токена: " + e.getMessage());
+        }
+    }
+
+    private static TrackInfo getTrackFromOAuthToken(YandexMusicClient client) {
+        return client.getCurrentTrackIdAsync()
+                .thenCompose(client::getTrackInfoAsync)
+                .join();
+    }
+
+    private static TrackInfo getTrackFromExtensionToken(YandexMusicClient client) {
+        return client.getCurrentTrackIdAsync()
+                .thenCompose(client::getTrackInfoAsync)
+                .join();
     }
 }
