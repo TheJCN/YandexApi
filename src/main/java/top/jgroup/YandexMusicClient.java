@@ -34,18 +34,29 @@ import java.util.concurrent.TimeUnit;
  * YandexMusicClient client = new YandexMusicClient(token);
  * }</pre>
  *   </li>
- *   <li>Через конструктор с токеном, флагом OAuth и прокси (прокси необязателен):
+ *   <li>Через конструктор с токеном, флагом OAuth и прокси:
  *     <pre>{@code
  * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
  * YandexMusicClient client = new YandexMusicClient(token, true, proxy);
  * }</pre>
  *   </li>
- *   <li>Через пустой конструктор с последующей установкой параметров:
+ *   <li>Если используется приватный прокси с логином и паролем:
  *     <pre>{@code
- * YandexMusicClient client = new YandexMusicClient();
- * client.setToken(token);        // обязательный вызов
- * client.setIsOauth(true);       // необязательный вызов
- * client.setProxy(proxy);        // необязательный вызов прокси
+ * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+ * YandexMusicClient client = new YandexMusicClient(token, true, proxy, "userName", "password");
+ * }</pre>
+ *   </li>
+ *   <li>Если нужно сразу указать, требуется ли авторизация на прокси:
+ *     <pre>{@code
+ * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+ * YandexMusicClient client = new YandexMusicClient(
+ *     token,
+ *     true,
+ *     proxy,
+ *     true,                // proxyAuthRequired
+ *     "userName",
+ *     "password"
+ * );
  * }</pre>
  *   </li>
  * </ul>
@@ -53,7 +64,9 @@ import java.util.concurrent.TimeUnit;
  * <b>Важно:</b> если <code>token</code> не установлен или пуст,
  * то при вызове любого метода, требующего авторизации,
  * будет выброшено исключение {@link top.jgroup.exeptions.TokenNotSetException}.
- * Если прокси не установлен, запросы выполняются напрямую без прокси.
+ * Если используется приватный прокси с авторизацией,
+ * нужно включить {@code proxyAuthRequired = true} и указать логин и пароль.
+ * Если прокси не установлен, запросы выполняются напрямую.
  * </p>
  *
  * <hr>
@@ -63,38 +76,51 @@ import java.util.concurrent.TimeUnit;
  * A client class for working with Yandex Music API.
  * Allows asynchronous retrieval of the current track information and track info by ID.
  * A <b>valid OAuth token</b> is <b>required</b>.
- * There are several ways to create and configure the client:
+ * Several ways to create and configure the client:
  * </p>
  * <ul>
- *   <li>Using a constructor with token and OAuth flag:
+ *   <li>Constructor with token and OAuth flag:
  *     <pre>{@code
  * YandexMusicClient client = new YandexMusicClient(token, true);
  * }</pre>
  *   </li>
- *   <li>Using a constructor with only token (OAuth flag is optional, defaults to false):
+ *   <li>Constructor with only token (OAuth flag optional, defaults to false):
  *     <pre>{@code
  * YandexMusicClient client = new YandexMusicClient(token);
  * }</pre>
  *   </li>
- *   <li>Using a constructor with token, OAuth flag and optional proxy:
+ *   <li>Constructor with token, OAuth flag and proxy:
  *     <pre>{@code
  * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
  * YandexMusicClient client = new YandexMusicClient(token, true, proxy);
  * }</pre>
  *   </li>
- *   <li>Using the default constructor and setters:
+ *   <li>If using a private proxy with username and password:
  *     <pre>{@code
- * YandexMusicClient client = new YandexMusicClient();
- * client.setToken(token);        // mandatory
- * client.setIsOauth(true);       // optional
- * client.setProxy(proxy);        // optional proxy
+ * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+ * YandexMusicClient client = new YandexMusicClient(token, true, proxy, "userName", "password");
+ * }</pre>
+ *   </li>
+ *   <li>If you want to specify whether proxy authorization is required:
+ *     <pre>{@code
+ * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+ * YandexMusicClient client = new YandexMusicClient(
+ *     token,
+ *     true,
+ *     proxy,
+ *     true,                // proxyAuthRequired
+ *     "userName",
+ *     "password"
+ * );
  * }</pre>
  *   </li>
  * </ul>
  * <p>
  * <b>Important:</b> if <code>token</code> is not set or is blank,
  * any method that requires authorization will throw a {@link top.jgroup.exeptions.TokenNotSetException}.
- * If proxy is not set, requests will be made directly without proxy.
+ * If using a private proxy with authorization,
+ * you must set {@code proxyAuthRequired = true} and specify username and password.
+ * If no proxy is set, requests are made directly.
  * </p>
  */
 public class YandexMusicClient {
@@ -105,6 +131,30 @@ public class YandexMusicClient {
     private @Setter String token;
     private @Setter boolean isOauth;
     private Proxy proxy;
+
+    private @Setter String proxyUser;
+    private @Setter String proxyPassword;
+    private boolean proxyAuthRequired = false;
+
+    public YandexMusicClient(String token, boolean isOauth, Proxy proxy,
+                             boolean proxyAuthRequired, String proxyUser, String proxyPassword) {
+        this.token = token;
+        this.isOauth = isOauth;
+        this.proxy = proxy;
+        this.proxyAuthRequired = proxyAuthRequired;
+        this.proxyUser = proxyUser;
+        this.proxyPassword = proxyPassword;
+        initClient();
+    }
+
+    public YandexMusicClient(String token, boolean isOauth, Proxy proxy, String proxyUser, String proxyPassword) {
+        this.token = token;
+        this.isOauth = isOauth;
+        this.proxy = proxy;
+        this.proxyUser = proxyUser;
+        this.proxyPassword = proxyPassword;
+        initClient();
+    }
 
     public YandexMusicClient(String token, boolean isOauth, Proxy proxy) {
         this.token = token;
@@ -130,13 +180,27 @@ public class YandexMusicClient {
         initClient();
     }
 
+    public void setProxyAuthRequired(boolean proxyAuthRequired) {
+        this.proxyAuthRequired = proxyAuthRequired;
+        initClient();
+    }
+
     private void initClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         if (proxy != null) {
             builder.proxy(proxy);
-            builder.connectTimeout(15, TimeUnit.SECONDS);
-            builder.readTimeout(15, TimeUnit.SECONDS);
-            builder.writeTimeout(15, TimeUnit.SECONDS);
+            builder.connectTimeout(5, TimeUnit.SECONDS);
+            builder.readTimeout(5, TimeUnit.SECONDS);
+            builder.writeTimeout(5, TimeUnit.SECONDS);
+
+            if (proxyAuthRequired) {
+                builder.proxyAuthenticator((route, response) -> {
+                    String credential = Credentials.basic(proxyUser, proxyPassword);
+                    return response.request().newBuilder()
+                            .header("Proxy-Authorization", credential)
+                            .build();
+                });
+            }
         }
         this.client = builder.build();
     }
