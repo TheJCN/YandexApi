@@ -11,7 +11,9 @@ import top.jgroup.helpers.YnisonHelper;
 import top.jgroup.model.TrackInfo;
 
 import java.net.ProtocolException;
+import java.net.Proxy;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p><b>Русский:</b></p>
@@ -19,7 +21,7 @@ import java.util.concurrent.CompletableFuture;
  * Класс для работы с Yandex Music API.
  * Позволяет асинхронно получать информацию о текущем треке и о треках по их ID.
  * Для работы требуется указать <b>обязательный OAuth токен</b>.
- * Есть три способа создать и настроить клиент:
+ * Есть несколько способов создать и настроить клиент:
  * </p>
  * <ul>
  *   <li>Через конструктор с токеном и флагом OAuth:
@@ -32,11 +34,18 @@ import java.util.concurrent.CompletableFuture;
  * YandexMusicClient client = new YandexMusicClient(token);
  * }</pre>
  *   </li>
+ *   <li>Через конструктор с токеном, флагом OAuth и прокси (прокси необязателен):
+ *     <pre>{@code
+ * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+ * YandexMusicClient client = new YandexMusicClient(token, true, proxy);
+ * }</pre>
+ *   </li>
  *   <li>Через пустой конструктор с последующей установкой параметров:
  *     <pre>{@code
  * YandexMusicClient client = new YandexMusicClient();
  * client.setToken(token);        // обязательный вызов
  * client.setIsOauth(true);       // необязательный вызов
+ * client.setProxy(proxy);        // необязательный вызов прокси
  * }</pre>
  *   </li>
  * </ul>
@@ -44,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
  * <b>Важно:</b> если <code>token</code> не установлен или пуст,
  * то при вызове любого метода, требующего авторизации,
  * будет выброшено исключение {@link top.jgroup.exeptions.TokenNotSetException}.
+ * Если прокси не установлен, запросы выполняются напрямую без прокси.
  * </p>
  *
  * <hr>
@@ -53,7 +63,7 @@ import java.util.concurrent.CompletableFuture;
  * A client class for working with Yandex Music API.
  * Allows asynchronous retrieval of the current track information and track info by ID.
  * A <b>valid OAuth token</b> is <b>required</b>.
- * You can configure the client in one of the following ways:
+ * There are several ways to create and configure the client:
  * </p>
  * <ul>
  *   <li>Using a constructor with token and OAuth flag:
@@ -66,39 +76,69 @@ import java.util.concurrent.CompletableFuture;
  * YandexMusicClient client = new YandexMusicClient(token);
  * }</pre>
  *   </li>
+ *   <li>Using a constructor with token, OAuth flag and optional proxy:
+ *     <pre>{@code
+ * Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("proxy.host", 8080));
+ * YandexMusicClient client = new YandexMusicClient(token, true, proxy);
+ * }</pre>
+ *   </li>
  *   <li>Using the default constructor and setters:
  *     <pre>{@code
  * YandexMusicClient client = new YandexMusicClient();
  * client.setToken(token);        // mandatory
  * client.setIsOauth(true);       // optional
+ * client.setProxy(proxy);        // optional proxy
  * }</pre>
  *   </li>
  * </ul>
  * <p>
  * <b>Important:</b> if <code>token</code> is not set or is blank,
  * any method that requires authorization will throw a {@link top.jgroup.exeptions.TokenNotSetException}.
+ * If proxy is not set, requests will be made directly without proxy.
  * </p>
  */
-
 public class YandexMusicClient {
 
-    private final OkHttpClient client = new OkHttpClient();
+    private OkHttpClient client;
     private final ObjectMapper mapper = new ObjectMapper();
 
     private @Setter String token;
-
     private @Setter boolean isOauth;
+    private Proxy proxy;
 
-    public YandexMusicClient(String token, boolean isOauth) {
+    public YandexMusicClient(String token, boolean isOauth, Proxy proxy) {
         this.token = token;
         this.isOauth = isOauth;
+        this.proxy = proxy;
+        initClient();
+    }
+
+    public YandexMusicClient(String token, boolean isOauth) {
+        this(token, isOauth, null);
     }
 
     public YandexMusicClient(String token) {
-        this(token, false);
+        this(token, false, null);
     }
 
     public YandexMusicClient() {
+        initClient();
+    }
+
+    public void setProxy(Proxy proxy) {
+        this.proxy = proxy;
+        initClient();
+    }
+
+    private void initClient() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        if (proxy != null) {
+            builder.proxy(proxy);
+            builder.connectTimeout(15, TimeUnit.SECONDS);
+            builder.readTimeout(15, TimeUnit.SECONDS);
+            builder.writeTimeout(15, TimeUnit.SECONDS);
+        }
+        this.client = builder.build();
     }
 
     private void checkToken() {
@@ -106,7 +146,6 @@ public class YandexMusicClient {
             throw new TokenNotSetException("Токен не установлен. Установите токен перед использованием методов, требующих авторизации.");
         }
     }
-
     /**
      * <p><b>Русский:</b></p>
      * <p>
