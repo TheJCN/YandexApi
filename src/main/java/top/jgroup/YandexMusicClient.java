@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Setter;
 import okhttp3.*;
-import top.jgroup.exeptions.OAuthTokenAbroadException;
-import top.jgroup.exeptions.TokenNotSetException;
-import top.jgroup.exeptions.YandexMusicException;
+import top.jgroup.exceptions.OAuthTokenAbroadException;
+import top.jgroup.exceptions.TokenNotSetException;
+import top.jgroup.exceptions.YandexMusicException;
 import top.jgroup.helpers.YnisonHelper;
 import top.jgroup.model.TrackInfo;
 
@@ -63,7 +63,7 @@ import java.util.concurrent.TimeUnit;
  * <p>
  * <b>Важно:</b> если <code>token</code> не установлен или пуст,
  * то при вызове любого метода, требующего авторизации,
- * будет выброшено исключение {@link top.jgroup.exeptions.TokenNotSetException}.
+ * будет выброшено исключение {@link top.jgroup.exceptions.TokenNotSetException}.
  * Если используется приватный прокси с авторизацией,
  * нужно включить {@code proxyAuthRequired = true} и указать логин и пароль.
  * Если прокси не установлен, запросы выполняются напрямую.
@@ -117,7 +117,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * <p>
  * <b>Important:</b> if <code>token</code> is not set or is blank,
- * any method that requires authorization will throw a {@link top.jgroup.exeptions.TokenNotSetException}.
+ * any method that requires authorization will throw a {@link top.jgroup.exceptions.TokenNotSetException}.
  * If using a private proxy with authorization,
  * you must set {@code proxyAuthRequired = true} and specify username and password.
  * If no proxy is set, requests are made directly.

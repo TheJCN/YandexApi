@@ -3,7 +3,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import org.jetbrains.annotations.NotNull;
-import top.jgroup.exeptions.YandexMusicException;
+import top.jgroup.exceptions.YandexMusicException;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;

@@ -1,4 +1,4 @@
-package top.jgroup.exeptions;
+package top.jgroup.exceptions;
 
 public class TokenNotSetException extends RuntimeException {
     public TokenNotSetException(String message) {

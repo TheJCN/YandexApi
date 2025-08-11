@@ -1,4 +1,4 @@
-package top.jgroup.exeptions;
+package top.jgroup.exceptions;
 
 public class YandexMusicException extends RuntimeException {
     public YandexMusicException(String message) {
